@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "anthropic", # type: ignore
+#     "ollama", # type: ignore
 #     "pydantic",
 # ]
 # ///
@@ -9,7 +9,7 @@
 import os
 import sys
 from typing import List, Dict, Any
-from anthropic import Anthropic
+import ollama
 from pydantic import BaseModel
 
 
@@ -20,12 +20,12 @@ class Tool(BaseModel):
 
 
 class AIAgent:
-    def __init__(self, api_key: str):
-        self.client = Anthropic(api_key=api_key)
+    def __init__(self, model: str = "qwen3:4b"):
+        self.model = model
         self.messages: List[Dict[str, Any]] = []
         self.tools: List[Tool] = []
         self._setup_tools()
-        print(f"Agent initialized with {len(self.tools)} tools")
+        print(f"Agent initialized with {len(self.tools)} tools using model: {model}")
 
     def _setup_tools(self):
         self.tools = [
@@ -158,20 +158,17 @@ class AIAgent:
 
 
 if __name__ == "__main__":
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("Error: ANTHROPIC_API_KEY not set")
-        sys.exit(1)
-    agent = AIAgent(api_key)
+    agent = AIAgent()
     # Test the tools
     print(agent._list_files("."))
 
 # ```bash
-# export ANTHROPIC_API_KEY="your-api
+# ollama serve  # Make sure Ollama is running
+# ollama pull qwen3:4b  # Pull the model if not already available
 # uv run runbook/04_implement_tool_execution.py
 # ```
 # Should print:
-# Agent initialized with 3 tools
+# Agent initialized with 3 tools using model: qwen3:4b
 # Contents of .:
 # [FILE] main.py
 # ... (other files in directory)

@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "anthropic", # type: ignore
+#     "ollama", # type: ignore
 #     "pydantic",
 # ]
 # ///
@@ -9,7 +9,7 @@
 import os
 import sys
 from typing import List, Dict, Any
-from anthropic import Anthropic
+import ollama
 from pydantic import BaseModel
 
 
@@ -20,8 +20,8 @@ class Tool(BaseModel):
 
 
 class AIAgent:
-    def __init__(self, api_key: str):
-        self.client = Anthropic(api_key=api_key)
+    def __init__(self, model: str = "qwen3:4b"):
+        self.model = model
         self.messages: List[Dict[str, Any]] = []
         self.tools: List[Tool] = []
         self._setup_tools()
@@ -158,80 +158,74 @@ class AIAgent:
     def chat(self, user_input: str) -> str:
         self.messages.append({"role": "user", "content": user_input})
 
-        tool_schemas = [
+        # Convert tools to Ollama format
+        ollama_tools = [
             {
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": tool.input_schema,
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.input_schema,
+                },
             }
             for tool in self.tools
         ]
 
         while True:
             try:
-                response = self.client.messages.create(
-                    model="claude-sonnet-4-5-20250929",
-                    max_tokens=4096,
+                response = ollama.chat(
+                    model=self.model,
                     messages=self.messages,
-                    tools=tool_schemas,
+                    tools=ollama_tools,
                 )
 
-                assistant_message = {"role": "assistant", "content": []}
+                # Handle the response
+                message = response.get("message", {})
+                
+                # Add assistant message to conversation
+                self.messages.append({
+                    "role": "assistant",
+                    "content": message.get("content", ""),
+                    "tool_calls": message.get("tool_calls", [])
+                })
 
-                for content in response.content:
-                    if content.type == "text":
-                        assistant_message["content"].append(
-                            {
-                                "type": "text",
-                                "text": content.text,
-                            }
-                        )
-                    elif content.type == "tool_use":
-                        assistant_message["content"].append(
-                            {
-                                "type": "tool_use",
-                                "id": content.id,
-                                "name": content.name,
-                                "input": content.input,
-                            }
-                        )
-
-                self.messages.append(assistant_message)
-
-                tool_results = []
-                for content in response.content:
-                    if content.type == "tool_use":
-                        result = self._execute_tool(content.name, content.input)
-                        tool_results.append(
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": content.id,
-                                "content": result,
-                            }
-                        )
-
-                if tool_results:
-                    self.messages.append({"role": "user", "content": tool_results})
+                # Check if there are tool calls to execute
+                tool_calls = message.get("tool_calls", [])
+                if tool_calls:
+                    tool_results = []
+                    for tool_call in tool_calls:
+                        function = tool_call.get("function", {})
+                        tool_name = function.get("name")
+                        tool_args = function.get("arguments", {})
+                        
+                        result = self._execute_tool(tool_name, tool_args)
+                        
+                        tool_results.append({
+                            "role": "tool",
+                            "content": result,
+                            "tool_call_id": tool_call.get("id", "")
+                        })
+                    
+                    # Add tool results to messages
+                    self.messages.extend(tool_results)
                 else:
-                    return response.content[0].text if response.content else ""
+                    # No tool calls, return the response
+                    return message.get("content", "")
 
             except Exception as e:
                 return f"Error: {str(e)}"
 
 
 if __name__ == "__main__":
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("Error: ANTHROPIC_API_KEY not set")
-        sys.exit(1)
-    agent = AIAgent(api_key)
+    agent = AIAgent()
     # Test chat
     response = agent.chat("What files are in the current directory?")
     print(response)
 
 
 # ```bash
-# export ANTHROPIC_API_KEY="your-api
+# ollama serve  # Make sure Ollama is running
+# ollama pull qwen3:4b  # Pull the model if not already available
 # uv run runbook/05_add_chat_method.py
 # ```
-# Should print a response from Claude listing the files in the directory
+# Should print a response from qwen3:4b listing the files in the directory

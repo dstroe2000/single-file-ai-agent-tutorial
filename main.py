@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "anthropic",
+#     "ollama",
 #     "pydantic",
 # ]
 # ///
@@ -11,7 +11,7 @@ import sys
 import argparse
 import logging
 from typing import List, Dict, Any
-from anthropic import Anthropic  # type: ignore
+import ollama  # type: ignore
 from pydantic import BaseModel  # type: ignore
 
 # Set up logging
@@ -33,8 +33,8 @@ class Tool(BaseModel):
 
 
 class AIAgent:
-    def __init__(self, api_key: str):
-        self.client = Anthropic(api_key=api_key)
+    def __init__(self, model: str = "qwen3:4b"):
+        self.model = model
         self.messages: List[Dict[str, Any]] = []
         self.tools: List[Tool] = []
         self._setup_tools()
@@ -174,63 +174,68 @@ class AIAgent:
         logging.info(f"User input: {user_input}")
         self.messages.append({"role": "user", "content": user_input})
 
-        tool_schemas = [
+        # Convert tools to Ollama format
+        ollama_tools = [
             {
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": tool.input_schema,
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.input_schema,
+                },
             }
             for tool in self.tools
         ]
 
         while True:
             try:
-                response = self.client.messages.create(
-                    model="claude-sonnet-4-5-20250929",
-                    max_tokens=4096,
-                    system="You are a helpful coding assistant operating in a terminal environment. Output only plain text without markdown formatting, as your responses appear directly in the terminal. Be concise but thorough, providing clear and practical advice with a friendly tone. Don't use any asterisk characters in your responses.",
-                    messages=self.messages,
-                    tools=tool_schemas,
+                # Create system message for Ollama
+                messages_with_system = [
+                    {
+                        "role": "system",
+                        "content": "You are a helpful coding assistant operating in a terminal environment. Output only plain text without markdown formatting, as your responses appear directly in the terminal. Be concise but thorough, providing clear and practical advice with a friendly tone. Don't use any asterisk characters in your responses."
+                    }
+                ] + self.messages
+
+                response = ollama.chat(
+                    model=self.model,
+                    messages=messages_with_system,
+                    tools=ollama_tools,
                 )
 
-                assistant_message = {"role": "assistant", "content": []}
+                # Handle the response
+                message = response.get("message", {})
+                
+                # Add assistant message to conversation
+                self.messages.append({
+                    "role": "assistant",
+                    "content": message.get("content", ""),
+                    "tool_calls": message.get("tool_calls", [])
+                })
 
-                for content in response.content:
-                    if content.type == "text":
-                        assistant_message["content"].append(
-                            {"type": "text", "text": content.text}
-                        )
-                    elif content.type == "tool_use":
-                        assistant_message["content"].append(
-                            {
-                                "type": "tool_use",
-                                "id": content.id,
-                                "name": content.name,
-                                "input": content.input,
-                            }
-                        )
-
-                self.messages.append(assistant_message)
-
-                tool_results = []
-                for content in response.content:
-                    if content.type == "tool_use":
-                        result = self._execute_tool(content.name, content.input)
-                        logging.info(
-                            f"Tool result: {result[:500]}..."
-                        )  # Log first 500 chars
-                        tool_results.append(
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": content.id,
-                                "content": result,
-                            }
-                        )
-
-                if tool_results:
-                    self.messages.append({"role": "user", "content": tool_results})
+                # Check if there are tool calls to execute
+                tool_calls = message.get("tool_calls", [])
+                if tool_calls:
+                    tool_results = []
+                    for tool_call in tool_calls:
+                        function = tool_call.get("function", {})
+                        tool_name = function.get("name")
+                        tool_args = function.get("arguments", {})
+                        
+                        result = self._execute_tool(tool_name, tool_args)
+                        logging.info(f"Tool result: {result[:500]}...")  # Log first 500 chars
+                        
+                        tool_results.append({
+                            "role": "tool",
+                            "content": result,
+                            "tool_call_id": tool_call.get("id", "")
+                        })
+                    
+                    # Add tool results to messages
+                    self.messages.extend(tool_results)
                 else:
-                    return response.content[0].text if response.content else ""
+                    # No tool calls, return the response
+                    return message.get("content", "")
 
             except Exception as e:
                 return f"Error: {str(e)}"
@@ -241,22 +246,17 @@ def main():
         description="AI Code Assistant - A conversational AI agent with file editing capabilities"
     )
     parser.add_argument(
-        "--api-key", help="Anthropic API key (or set ANTHROPIC_API_KEY env var)"
+        "--model", 
+        default="qwen3:4b",
+        help="Ollama model to use (default: qwen3:4b)"
     )
     args = parser.parse_args()
 
-    api_key = args.api_key or os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        print(
-            "Error: Please provide an API key via --api-key or ANTHROPIC_API_KEY environment variable"
-        )
-        sys.exit(1)
+    agent = AIAgent(args.model)
 
-    agent = AIAgent(api_key)
-
-    print("AI Code Assistant")
-    print("================")
-    print("A conversational AI agent that can read, list, and edit files.")
+    print("AI Code Assistant (Ollama)")
+    print("==========================")
+    print(f"A conversational AI agent using {args.model} that can read, list, and edit files.")
     print("Type 'exit' or 'quit' to end the conversation.")
     print()
 
