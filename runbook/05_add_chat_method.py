@@ -10,6 +10,7 @@ import os
 import sys
 from typing import List, Dict, Any
 import ollama
+from ollama import Client
 from pydantic import BaseModel
 
 
@@ -22,6 +23,7 @@ class Tool(BaseModel):
 class AIAgent:
     def __init__(self, model: str = "qwen3:4b"):
         self.model = model
+        self.client = Client()  # Initialize Ollama client
         self.messages: List[Dict[str, Any]] = []
         self.tools: List[Tool] = []
         self._setup_tools()
@@ -173,7 +175,7 @@ class AIAgent:
 
         while True:
             try:
-                response = ollama.chat(
+                response = self.client.chat(
                     model=self.model,
                     messages=self.messages,
                     tools=ollama_tools,

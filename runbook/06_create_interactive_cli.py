@@ -12,6 +12,7 @@ import argparse  # NEW
 import logging
 from typing import List, Dict, Any
 import ollama
+from ollama import Client
 from pydantic import BaseModel
 
 # Set up logging
@@ -33,8 +34,16 @@ class Tool(BaseModel):
 
 
 class AIAgent:
-    def __init__(self, model: str = "qwen3:4b"):
+    def __init__(self, model: str = "qwen3:4b", server: str = None):
         self.model = model
+        self.server = server
+        
+        # Initialize Ollama client
+        if server:
+            self.client = Client(host=server)
+        else:
+            self.client = Client()  # Uses default local server
+            
         self.messages: List[Dict[str, Any]] = []
         self.tools: List[Tool] = []
         self._setup_tools()
@@ -187,9 +196,10 @@ class AIAgent:
 
         while True:
             try:
-                response = ollama.chat(
+                # Use the client to make the chat request
+                response = self.client.chat(
                     model=self.model,
-                    messages=self.messages,
+                    messages=messages_with_system,
                     tools=ollama_tools,
                 )
 
@@ -240,9 +250,13 @@ def main():
         default="qwen3:4b",
         help="Ollama model to use (default: qwen3:4b)"
     )
+    parser.add_argument(
+        "--server",
+        help="Ollama server address (default: local server)"
+    )
     args = parser.parse_args()
 
-    agent = AIAgent(args.model)
+    agent = AIAgent(args.model, args.server)
 
     print("AI Code Assistant (Ollama)")
     print("==========================")
