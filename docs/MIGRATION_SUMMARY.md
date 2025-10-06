@@ -1,4 +1,16 @@
-# Migration Summary: Anthropic → Ollama
+# Migration Summary: Anthropic to Ollama
+
+## 📚 Table of Contents
+
+- [📋 Overview](#-overview)
+- [📚 Reference Documentation](#-reference-documentation)
+- [📁 Files Modified](#-files-modified)
+- [🔄 Types of Changes Applied](#-types-of-changes-applied)
+- [🎯 Migration Benefits](#-migration-benefits)
+- [🔧 Prerequisites After Migration](#-prerequisites-after-migration)
+- [🧪 Testing & Verification](#-testing--verification)
+- [✅ Migration Status](#-migration-status)
+- [🚀 Usage After Migration](#-usage-after-migration)mmary: Anthropic → Ollama
 
 This document provides a comprehensive overview of the migration from Anthropic's Claude API to Ollama's local API using the `qwen3:4b` model.
 
@@ -19,7 +31,23 @@ This document provides a comprehensive overview of the migration from Anthropic'
 **Target Model**: `qwen3:4b` (consistently used across all files)
 **Migration Date**: October 5, 2025
 
-## 📁 Files Modified
+## � Reference Documentation
+
+This migration was based on the official documentation for both APIs:
+
+### **Source API (Anthropic Claude)**
+- **Tool Use Documentation**: [https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview](https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview)
+- **API Format**: Anthropic's proprietary tool calling convention with `input_schema` format
+- **Response Structure**: Complex content blocks with `tool_use` and `tool_result` types
+
+### **Target API (Ollama)**
+- **Tool Support Documentation**: [https://ollama.com/blog/tool-support](https://ollama.com/blog/tool-support)
+- **API Format**: OpenAI-compatible tool calling convention with `parameters` format
+- **Response Structure**: Simplified message structure with `tool_calls` array
+
+The migration involved converting between these two different tool calling conventions while maintaining identical functionality.
+
+## �📁 Files Modified
 
 ### **Core Application Files**
 | File | Type of Changes | Status |
@@ -100,27 +128,29 @@ def __init__(self, model: str = "qwen3:4b"):
 ### **4. Tool Schema Format Conversion**
 **Files Affected**: Files with chat functionality (`main.py`, `runbook/05-07_*.py`)
 
-**Before** (Anthropic format):
+This was the most significant change, converting between two different tool calling conventions:
+
+**Before** (Anthropic format - [docs](https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview)):
 ```python
 tool_schemas = [
     {
         "name": tool.name,
         "description": tool.description,
-        "input_schema": tool.input_schema,
+        "input_schema": tool.input_schema,    # Anthropic uses 'input_schema'
     }
     for tool in self.tools
 ]
 ```
 
-**After** (Ollama/OpenAI format):
+**After** (Ollama/OpenAI format - [docs](https://ollama.com/blog/tool-support)):
 ```python
 ollama_tools = [
     {
-        "type": "function",
+        "type": "function",                   # OpenAI standard requires 'type': 'function'
         "function": {
             "name": tool.name,
             "description": tool.description,
-            "parameters": tool.input_schema,
+            "parameters": tool.input_schema,  # OpenAI uses 'parameters'
         },
     }
     for tool in self.tools
