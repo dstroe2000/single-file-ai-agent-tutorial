@@ -343,6 +343,7 @@ uv run runbook/07_add_personality.py --model qwen3:4b
 - **Total Files Modified**: 11 files
 - **New Files Created**: 3 files  
 - **Migration Status**: ✅ **Complete**
+- **Server Argument**: ✅ **Implemented with ollama.Client**
 - **Verification Status**: ✅ **All tests passing**
 - **Functionality Status**: ✅ **Full feature parity maintained**
 
@@ -365,12 +366,14 @@ ollama serve
 ollama pull qwen3:4b
 
 # Use main application
-uv run main.py                           # Uses qwen3:4b by default
-uv run main.py --model qwen3:4b         # Explicit model selection
+uv run main.py                                    # Uses qwen3:4b by default
+uv run main.py --model qwen3:4b                  # Explicit model selection
+uv run main.py --server http://remote-host:11434 # Connect to remote Ollama server
 
 # Use runbook examples
-uv run runbook/07_add_personality.py    # Full interactive experience
-uv run runbook/05_add_chat_method.py    # Test chat functionality
+uv run runbook/07_add_personality.py                          # Full interactive experience
+uv run runbook/06_create_interactive_cli.py --server http://remote:11434  # With remote server
+uv run runbook/05_add_chat_method.py                          # Test chat functionality
 ```
 
 The migration maintains complete feature parity while providing the benefits of local execution, privacy, and cost savings.
