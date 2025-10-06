@@ -8,9 +8,13 @@ You'll understand how AI agents parse responses, execute tools, and maintain con
 
 ## Credits
 
-This repository is forked from Francis Beeson's implementation: [Single-File AI Agent Tutorial](https://github.com/leobeeson/single-file-ai-agent-tutorial)
+This repository is forked from Dave Ebbelaar's implementation: [Single-File AI Agent Tutorial](https://github.com/daveebbelaar/single-file-ai-agent-tutorial).
 
-The code is based on the tutorial by Thorsten Ball in ["How to Build an Agent"](https://ampcode.com/how-to-build-an-agent) from ampcode.com. Thank you, Thorsten. Brilliant guide.
+Dave Ebbelaar's implementation is also based on the following sources:
+- It is forked from Francis Beeson's implementation: [Single-File AI Agent Tutorial](https://github.com/leobeeson/single-file-ai-agent-tutorial)
+- Which code is based on the tutorial by Thorsten Ball in ["How to Build an Agent"](https://ampcode.com/how-to-build-an-agent) from ampcode.com
+
+Thank you, all: Dave, Francis, and Thorsten!
 
 **📋 Migration Note**: This repository has been migrated from Anthropic's Claude API to Ollama for local execution. See [docs/MIGRATION_SUMMARY.md](docs/MIGRATION_SUMMARY.md) for detailed migration information.
 
