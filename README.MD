@@ -16,7 +16,9 @@ Dave Ebbelaar's implementation is also based on the following sources:
 
 Thank you, all: Dave, Francis, and Thorsten!
 
-**📋 Migration Note**: This repository has been migrated from Anthropic's Claude API to Ollama for local execution. See [docs/MIGRATION_SUMMARY.md](docs/MIGRATION_SUMMARY.md) for detailed migration information.
+## 📋 Migration Note
+ 
+This repository has been migrated from Anthropic's Claude API to Ollama for local execution. See [docs/MIGRATION_SUMMARY.md](docs/MIGRATION_SUMMARY.md) for detailed migration information.
 
 ## Features
 
