@@ -253,28 +253,31 @@ class AIAgent:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AI Code Assistant - A conversational AI agent with file editing capabilities"
+        description="🏠 Local AI Code Assistant - Private, fast, and cost-free conversational AI agent with file editing capabilities"
     )
     parser.add_argument(
         "--model", 
         default="qwen3:4b",
-        help="Ollama model to use (default: qwen3:4b)"
+        help="Ollama model to use - compact, efficient models for local execution (default: qwen3:4b)"
     )
     parser.add_argument(
         "--server",
-        help="Ollama server address (default: local server)"
+        help="Ollama server address for remote execution (default: localhost - keeps data private)"
     )
     args = parser.parse_args()
 
     agent = AIAgent(args.model, args.server)
 
-    print("AI Code Assistant (Ollama)")
-    print("==========================")
-    print(f"A conversational AI agent using {args.model} that can read, list, and edit files.")
+    print("🏠 Local AI Code Assistant (Ollama)")
+    print("=====================================")
+    print(f"🤖 Running {args.model} locally - your data stays private!")
+    print("📁 I can read, list, and edit files through natural conversation.")
     if args.server:
-        print(f"Connected to Ollama server: {args.server}")
+        print(f"🌐 Connected to Ollama server: {args.server}")
     else:
-        print("Using local Ollama server")
+        print("💻 Using local Ollama server (completely private)")
+    print("💡 Benefits: No API costs, offline capable, lightning fast!")
+    print()
     print("Type 'exit' or 'quit' to end the conversation.")
     print()
 
