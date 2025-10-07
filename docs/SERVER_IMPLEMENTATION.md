@@ -1,5 +1,16 @@
 # Server Argument Implementation Summary
 
+> 📖 **Context**: This feature was implemented as part of the broader Anthropic → Ollama migration documented in [MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md)
+
+## 🎯 **Local AI Flexibility**
+The `--server` argument enables flexible deployment of small, efficient AI models:
+- 🏠 **Localhost**: Run qwen3:4b on your personal machine (default)
+- 🖥️ **Local Network**: Deploy on a dedicated server within your network  
+- 🏢 **Private Cloud**: Host on your organization's private infrastructure
+- 💻 **Team Sharing**: Share a single Ollama instance across development teams
+
+All while maintaining **complete data privacy** - no external API calls, no cloud dependencies.
+
 ## ✅ Problem Resolved
 **Issue**: "Client.chat() got an unexpected keyword argument 'host'" error when using --server argument
 
@@ -96,3 +107,6 @@ python3 main.py --model qwen3:4b --server http://production:11434
 The Ollama Python library requires using the `Client` class for server configuration rather than passing host parameters directly to individual API calls. This approach provides better connection management and is the recommended pattern for production usage.
 
 **Status**: ✅ **COMPLETE** - Server argument fully implemented and tested
+
+---
+📖 **Related Documentation**: See [MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md) for the complete migration story and project overview.
